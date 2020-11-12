@@ -5,9 +5,6 @@ Scripts, sets de datos y slides para la clase Estadística Descriptiva con R
 
 En esta clase aprenderemos a realizar diferentes variantes de las pruebas estadísticas X2, t y ANOVA con el lenguaje de programación R. Abordaremos cómo elegir un test estadístico, la interpretación de los resultados de las pruebas X2, t y ANOVA, así como otras pruebas y correcciones que se emplean en escenarios particulares.
 
-
-## NOTA ADICIONAL
-
 Las alternativas no paramétricas a t y ANOVA, así como los tests usados con grupos de muestras no independientes (ej. en los estudios longitudinales), se abordarán en sesiones posteriores.
 
 
