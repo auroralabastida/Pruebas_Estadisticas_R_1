@@ -36,41 +36,13 @@ summary(iris)
 
 library("ggplot2")
 
-ggplot(iris, aes(x=Species, y=Sepal.Length)) + 
-geom_boxplot(outlier.color="red")
+ggplot(iris, aes(x=Species, y=Sepal.Length)) + geom_boxplot()
 
+#Importamos los datos sin outliers. Los outliers fueron eliminados con base en el IQR
 
-#   Límite inferior para los datos de virginica
+irisf <- read.csv("datos/irisf.csv",header=TRUE,row.names = 1,stringsAsFactors = TRUE)
 
-virginica<-iris[ iris[5] =="virginica" , 1]
-
-inf_v<-quantile(virginica,0.25) - 1.5*IQR(virginica)
-
-
-#   Eliminando el outlier identificado
-
-
-irisf<-iris[ !( iris[1] < inf_v & iris[5] =="virginica" ),]
-
-
-ggplot(irisf, aes(x=Species, y=Sepal.Length)) + 
-geom_boxplot(outlier.color="red")
-
-#   En el nuevo boxplot hay un nuevo outlier 
-
-
-#   Eliminando el segundo outlier identificado
-
-
-sup_v<-quantile(virginica,0.25) + 1.5*IQR(virginica)
-
-
-irisf<-irisf[ !( irisf[1] > sup_v & irisf[5] =="virginica" ),]
-
-
-ggplot(irisf, aes(x=Species, y=Sepal.Length)) + 
-geom_boxplot(outlier.color="red")
-
+ggplot(irisf, aes(x=Species, y=Sepal.Length)) + geom_boxplot()
 
 
 #   B.2 Distribucion normal de datos
@@ -78,13 +50,10 @@ geom_boxplot(outlier.color="red")
 
 #    B.2.a ¿Cómo se ve la forma de las distribuciones?
 
-ggplot(data=irisf,aes(x=Sepal.Length, y=..density..)) +
-geom_histogram(position="identity") + 
-geom_density() +
-facet_grid(Species~.)
+ggplot(data=irisf,aes(x=Sepal.Length, fill=Species)) + geom_density(alpha=0.4)
 
 
-#   B.2.b Q-Q plots: correlación entre los cuantiles de 
+#   B.2.b Q-Q plots: correlación entre los cuantiles de
 #  los datos y los de una distribución normal
 
 library("ggpubr")
@@ -116,11 +85,6 @@ by(irisf$Sepal.Length, irisf$Species, shapiro.test)
 bartlett.test(Sepal.Length ~ Species, data = irisf)
 
 #   El valor p significativo indica varianzas no homogeneas
-#   ¿Qué tan distintas son las varianzas entre sí?
-
-by(irisf$Sepal.Length, irisf$Species, var)
-
-
 
 
 #      C. ANOVA de una via
@@ -136,25 +100,18 @@ by(irisf$Sepal.Length, irisf$Species, var)
 
 
 #  C.1 Test ANOVA
+#  La funcion oneway.test usa por default el ANOVA de Welch,
+#  que hace un ajuste tomando en cuenta la disimilitud de varianzas
 
-#  La funcion aov y la funcion oneway.test obtienen el mismo
-#  resultado siempre que en oneway.test se asuma que las varianzas
-#  de los grupos son iguales
+oneway.test(Sepal.Length~Species, data=irisf)
 
-
-irisf_aov1<-aov(Sepal.Length~Species, data=irisf)
-
-summary(irisf_aov1)
+#  La funcion aov y o la funcion oneway.test con var.equal=TRUE
+#  asumen que las varianzas son iguales
 
 oneway.test(Sepal.Length~Species, data=irisf, var.equal=TRUE)
 
-
-#  En el caso de irisf no se cumplio el supuesto de igualdad
-#  de varianzas por lo que podemos usar el ANOVA de Welch,
-#  que hace un ajuste tomando en cuenta la disimilitud de varianzas
-
-
-irisf_aov2<-oneway.test(Sepal.Length~Species, data=irisf, var.equal=FALSE)
+irisf_aov1<-aov(Sepal.Length~Species, data=irisf)
+summary(irisf_aov1)
 
 
 #  C.2 Comparaciones pareadas tras el ANOVA de una vía
@@ -177,40 +134,35 @@ TukeyHSD(irisf_aov1)
 #   usar la opcion pool.sd=FALSE. Con esto se pasa al t-test
 #   con correccion de Welch
 
-pairwise.t.test(irisf$Sepal.Length, irisf$Species, pool.sd=FALSE,p.adj = "bonf")
+pairwise.t.test(irisf$Sepal.Length, irisf$Species, pool.sd=FALSE)
 
 
 
 #      D. ANOVA de dos vias
 
 #      El ANOVA de dos vias se usa para evaluar simultaneamente
-#      el efecto de dos factores (variables categóricas que 
-#      dividen a los datos en grupos -niveles-) sobre la variable de 
-#      respuesta (los datos numéricos)
+#      el efecto de dos o más variables categoricas (ej. tratamientos, grupos)
+#      sobre el comportamiento de los datos numéricos
 
-#      Se evaluan varios pares de hipótesis nula | alternativa 
-#      H0 | H1:
+#      Al haber distintas variables se evaluan varios pares de
+#      hipótesis nula y alternativa.
 
-# No hay diferencia entre los promedios para el factor A | Si hay 
-# No hay diferencia entre los promedios para el factor B | Si hay
-# No hay interacción entre los factores A y B | Si hay
-
-#  D.1 Datos del crecimiento de odontoblastos (células de los dientes) #  en cuyos que recibieron distintos suplementos de vitamina C 
+#  D.1 Datos del crecimiento de odontoblastos (células de los dientes)
+#  en cuyos que recibieron distintos suplementos de vitamina C
 #  (supp: OJ y VC) cada uno en tres dosis distintas (dose: 0.5, 1, 2.0)
 
 
-summary(ToothGrowth) 
+View(ToothGrowth)
 
-#  Creamos una copia del data frame con un nombre más fácil de
-#  escribir
+#  Creamos una copia del data frame
 
 datos <- ToothGrowth
 
-#  Convertimos en factor la columna dose y Renombramos 
+#  Convertimos en factor la columna dose y Renombramos
 #  los niveles para que no sean interpretados como números
 
 
-datos$dose <- factor(datos$dose, 
+datos$dose <- factor(datos$dose,
                   levels = c(0.5, 1, 2),
                   labels = c("D1", "D2", "D3"))
 
@@ -226,9 +178,7 @@ table(datos$supp, datos$dose)
 #   D.2.a Normalidad
 
 
-ggplot(datos, aes(x=len, fill=dose, y=..density..)) + 
-facet_grid(supp~.) +
-geom_density(alpha=0.4)
+ggplot(datos, aes(x=len, fill=dose)) + geom_density(alpha=0.4)
 
 ggqqplot(datos, x="len", facet.by=c("supp","dose"))
 
@@ -272,14 +222,12 @@ datos.aov2 <- aov(len ~ supp * dose, data = datos)
 datos.aov2 <- aov(len ~ supp + dose + supp:dose, data = datos)
 
 #  El p value para la interacción es significativo. Esto es por que:
-#  el suplemento de vitamina C que se usa (supp) cambia el tamaño 
+#  el suplemento de vitamina C que se usa (supp) cambia el tamaño
 #  promedio de los odontoblastos, no obstante, la diferencia entre
 #  los dos suplementos es dependiente de la dosis. Cuando la dosis
 #  es D2 (alta) se vuelve indetectable.
 
-ggplot(datos, aes(y=len, fill=supp)) +
-geom_boxplot() +
-facet_grid(~dose)
+ggplot(datos, aes(y=len, fill=supp)) + geom_boxplot() + facet_grid(~dose)
 
 #  Esto se va a ver reflejado en los análisis pareados
 
@@ -333,7 +281,7 @@ eta_squared(irisf_aov1)
 eta_squared(datos.aov)
 
 
-#  Aqui se está calculando la contribución de las variables a la 
+#  Aqui se está calculando la contribución de las variables a la
 #  varianza en forma secuencial. Esto es, se mide el efecto de supp
 #  y una vez restado su efecto se mide el efecto de dose
 

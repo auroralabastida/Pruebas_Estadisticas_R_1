@@ -13,12 +13,12 @@ library("MASS")
 #   con la misma sd (y por lo tanto, lo misma varianza)
 #   Solo varía el promedio del peso.
 
-A = rnorm(30, mean=5) # Pesos ratones - dieta A
-B = rnorm(30, mean=10) # Pesos ratones - dieta B
+A <- rnorm(30, mean=5) # Pesos ratones - dieta A
+B <- rnorm(30, mean=10) # Pesos ratones - dieta B
 
 peso<-c(A,B) # Pesos A y B
 
-dieta<-as.factor(c(rep("A",30),rep("B",30))) # etiquetas de dieta A o B
+dieta<-c(rep("A",30),rep("B",30)) # etiquetas de dieta A o B
 
 #   Data frame que relaciona el peso con la dieta
 
@@ -27,38 +27,25 @@ peso_dieta<-data.frame(peso,dieta)
 
 #  A.2 Altura segun sexo (dataframe Survey del paquete MASS)
 
-summary(survey)
+View(survey)
 
 #   Tomaremos las columnas Height (altura) y Sex (sexo) de survey
 #   Para construir un dataframe que relaciona la altura con el sexo
 #   Este tipo de caracteristica (altura) suele seguir una distribucion
 #   normal
 
-altura_sexo<-data.frame(
-             altura=survey$Height,
-             sexo=as.factor(survey$Sex)
-             )
-
+altura_sexo<-data.frame( altura=survey$Height, sexo=survey$Sex )
 #   Vamos a eliminar las filas que tienen valores NA en alguna columna
 
-altura_sexo<-subset(altura_sexo, !is.na(altura))
-altura_sexo<-subset(altura_sexo, !is.na(sexo))
+altura_sexo<-na.omit(altura_sexo)
 
-summary(altura_sexo)
-
-
-#   Vamos a separar los valores para cada grupo en vectores
-#   pues nos serviran para varios calculos
-
-Female<-altura_sexo[altura_sexo$sexo=="Female", 1]
-Male<-altura_sexo[altura_sexo$sexo=="Male", 1]
+View(altura_sexo)
 
 
 #  A.3 Cantidad de usuarios de Internet conectados a un
 #  servidor por minuto (dataset WWWusage, R).
 
 #  este tipo de datos suele seguir una distribucion Poisson
-
 
 usage<-data.frame(users=as.numeric(WWWusage))
 
@@ -73,20 +60,17 @@ usage<-data.frame(users=as.numeric(WWWusage))
 
 library("ggplot2")
 
-ggplot(peso_dieta, aes(x=peso, fill=dieta, y=..density..)) +
-geom_histogram(position="identity")+
-geom_density(alpha=0.04)
+ggplot(peso_dieta, aes(x=peso, fill=dieta)) + geom_density()
 
-ggplot(altura_sexo, aes(x=altura, fill=sexo, y=..density..)) +
-geom_histogram(position="identity")+
-geom_density(alpha=0.04)
+ggplot(altura_sexo, aes(x=altura, fill=sexo)) + geom_density()
 
-ggplot(data=usage, aes(x=users, y=..density..)) + geom_histogram(bins=20, position="identity") + geom_density()
+ggplot(data=usage, aes(x=users)) + geom_density()
 
 
 #   B.1.b Observando la correlación entre los cuantiles de
 #   los datos y los cuantiles de una distribución normal
 #   mediante Quantile-Quantile (Q-Q) plots
+# install.packages("ggpubr")
 
 library("ggpubr")
 
@@ -114,11 +98,9 @@ shapiro.test( A )
 
 shapiro.test( B )
 
+by(altura_sexo$altura, altura_sexo$sexo, shapiro.test)
 
-shapiro.test( Female )
-
-shapiro.test( Male )
-
+shapiro.test(usage$users)
 
 #  B.2 Igualdad de varianzas (homocedasticidad)
 
@@ -132,13 +114,11 @@ shapiro.test( Male )
 #   Así pues, en los siguientes tests esperamos una p no significativa
 
 
-#   B.2.a Si estamos seguros de que los datos de ambos grupos
-#   provienen de una distribucion normal podemos utilizar el test F
+#   B.2.a Si los datos son normales podemos utilizar el test F
 #   -contraste de la razón de varianzas-
 
 var.test(peso ~ dieta, data = peso_dieta)
 
-var.test(altura ~ sexo, data = altura_sexo)
 
 #  En el segundo caso la p es < 0.05 por lo cual se acepta la hipótesis
 #  alternativa de que las varianzas son distintas entre los grupos.
@@ -148,7 +128,6 @@ var.test(altura ~ sexo, data = altura_sexo)
 #   mas grupos sin la necesidad de que el tamaño de los grupos
 #   sea el mismo. Es adecuado para datos normales.
 
-bartlett.test(peso ~ dieta, data = peso_dieta)
 
 bartlett.test(altura ~ sexo, data = altura_sexo)
 
@@ -163,7 +142,7 @@ bartlett.test(altura ~ sexo, data = altura_sexo)
 #   El IQR es la distancia entre el primer y el tercer cuartil
 
 
-ggplot(altura_sexo, aes(x=sexo, y=altura)) + geom_boxplot(outlier.colour="red")
+ggplot(altura_sexo, aes(x=sexo, y=altura)) + geom_boxplot()
 
 
 #   Encontrando los limites superior e inferior segun este criterio
@@ -171,14 +150,12 @@ ggplot(altura_sexo, aes(x=sexo, y=altura)) + geom_boxplot(outlier.colour="red")
 #   En este caso tuvimos un solo outlier en el extremo inferior
 #   delgrupo Female
 
+Female<-altura_sexo[altura_sexo$sexo=="Female","altura"]
 inf_f<-quantile(Female,0.25) - 1.5*IQR(Female)
-
 
 #   Eliminando el outlier en el grupo Female
 
-altura_sexo<-altura_sexo[!(altura_sexo$altura <inf_f),]
-
-Female<-Female[Female>=lim_inf]
+altura_sexo<-altura_sexo[altura_sexo$altura > 150,]
 
 
 #   Para eliminar los outliers en ambos extremos de ambos grupos
@@ -203,15 +180,12 @@ altura_sexo<-altura_sexo[!(
 
 #   Distribución tras la eliminación del outlier
 
-ggplot(altura_sexo, aes(x=sexo, y=altura)) +
-geom_boxplot(outlier.colour="red")
+ggplot(altura_sexo, aes(x=sexo, y=altura)) + geom_boxplot()
 
 
 #  Hay varios otros criterios y pruebas estadísticas para identificar
 #  outliers. Varios ejemplos se muestran en Ejercicios y Trucos
 #  adicionales.
-
-
 
 
 #      C. Realizando el test t
@@ -222,11 +196,15 @@ geom_boxplot(outlier.colour="red")
 #      Queremos saber si el promedio de un grupo es
 #      Significativamente distinto a un valor
 
-t.test(A, mu = 3)
+
+Female<-altura_sexo[altura_sexo$sexo=="Female","altura"]
+Male<-altura_sexo[altura_sexo$sexo=="Male","altura"]
+
+t.test(Female, mu = 1.50)
+
 
 #      O si es significativamente mayor a un valor
 
-t.test(A, mu=3, alternative="greater")
 
 t.test(Female, mu = 1.50, alternative="greater")
 
@@ -234,17 +212,15 @@ t.test(Female, mu = 1.50, alternative="greater")
 #      Ahora queremos saber si los promedios de ambos grupos
 #      son significativamente distintos entre si
 
-t.test(peso~dieta, peso_dieta, var.equal=TRUE)
-
 t.test(altura~sexo, altura_sexo)
 
-# Si en t.test se utiliza la opcion:
-# var.equal=TRUE el calculo se vuelve igual al ajuste al modelo lineal:
-# lm(size~group, size_group)
-# el t-test es un caso particular del ajuste a un modelo lineal
-# var.equal=FALSE por defecto y provoca que se aplique el test t de Welch
-# En el cual se hace un ajuste de grados de libertad para contender
-# con la diferencia de varianzas de los grupos.
+# En la fución t.test el parámetro var.equal es FALSO por defecto (var.equal=FALSE)
+# Esto señala que las varianzas no son homogeneas y provoca que se aplique
+# el test t de Welch, que incluye un ajuste de grados de libertad para contender
+# con la diferencia de varianzas de los grupos. Si este ajuste se desactiva
+# Utilizando var.equal=TRUE se aplicará el test sin ajuste (t de Student),
+
+t.test(peso~dieta, peso_dieta, var.equal=TRUE)
 
 
 #      Tambien podemos usar la siguiente formula
@@ -261,32 +237,6 @@ t.test(x=Female, y=Male, alternative="greater")
 
 t.test(x=Female, y=Male, alternative="less")
 
-
-
-#      D. Tamaño del efecto para el test t
-
-# install.packages("rstatix")  # Puede que necesites instalar a rstatix
-
-library("rstatix")
-
-#      La función cohens_d solo recibe data frames, así que para medir
-#      el efecto para un solo grupo transformaremos al vector A
-
-#      Efecto de la diferencia entre el promedio de A y 3
-
-A_df<-as.data.frame(A)
-
-cohens_d(A_df, A ~ 1  , mu=3, ci=TRUE)
-
-
-#      Efecto de la diferencia entre el promedio de A y 3
-
-cohens_d(peso_dieta, peso ~ dieta, var.equal = TRUE, ci=TRUE)
-
-cohens_d(altura_sexo, altura ~ sexo, var.equal = FALSE, ci=TRUE)
-
-#      En todos los casos tenemos un efecto alto (ver columna magnitude)
-#      cuyo intervalo de confianza no pasa por cero.
 
 
 
@@ -389,6 +339,32 @@ library("EnvStats")
 rosner_A <- rosnerTest(A, k = 3)
 
 rosner_A$all.stats
+
+
+#      D. Tamaño del efecto para el test t
+
+# install.packages("rstatix")  # Puede que necesites instalar a rstatix
+
+library("rstatix")
+
+#      La función cohens_d solo recibe data frames, así que para medir
+#      el efecto para un solo grupo transformaremos al vector A
+
+#      Efecto de la diferencia entre el promedio de A y 3
+
+A_df<-as.data.frame(A)
+
+cohens_d(A_df, A ~ 1  , mu=3, ci=TRUE)
+
+
+#      Efecto de la diferencia entre el promedio de A y B
+
+cohens_d(peso_dieta, peso ~ dieta, var.equal = TRUE, ci=TRUE)
+
+cohens_d(altura_sexo, altura ~ sexo, var.equal = FALSE, ci=TRUE)
+
+#      En todos los casos tenemos un efecto alto (ver columna magnitude)
+#      cuyo intervalo de confianza no pasa por cero.
 
 
 
